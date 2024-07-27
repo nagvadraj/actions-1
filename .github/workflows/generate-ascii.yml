@@ -23,7 +23,7 @@ jobs:
               run: grep -i "dragon" dragon.txt
 
         
-    thrid_job_deploy:
+    third_job_deploy:
         runs-on: ubuntu-latest
         steps:
             - name: Read file
