@@ -1,55 +1,27 @@
-name: shared matrix
+name: Matrix Configuration
+
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  define-matrix:
-    runs-on: ubuntu-latest
+    deploy:
+      strategy:
+        fail-fast: false
+        max-parallel: 2
+        matrix:
+          os: [ubuntu-latest, ubuntu-20.04, windows-latest]
+          images: [hello-world, alpine]
+          exclude:
+            - images: alpine
+              os: windows-latest
+          include:
+            - images: amd64/alpine
+              os: ubuntu-20.04
+      runs-on: ${{ matrix.os }}
+      steps:
+      - name: Echo Docker Details
+        run: docker info
 
-    outputs:
-      colors: ${{ steps.colors.outputs.colors }}
-
-    steps:
-      - name: Define Colors
-        id: colors
-        run: |
-          echo 'colors=["red", "green", "blue"]' >> "$GITHUB_OUTPUT"
-
-  produce-artifacts:
-    runs-on: ubuntu-latest
-    needs: define-matrix
-    strategy:
-      matrix:
-        color: ${{ fromJSON(needs.define-matrix.outputs.colors) }}
-
-    steps:
-      - name: Define Color
-        env:
-          color: ${{ matrix.color }}
-        run: |
-          echo "$color" > color
-      - name: Produce Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.color }}
-          path: color
-
-  consume-artifacts:
-    runs-on: ubuntu-latest
-    needs:
-    - define-matrix
-    - produce-artifacts
-    strategy:
-      matrix:
-        color: ${{ fromJSON(needs.define-matrix.outputs.colors) }}
-
-    steps:
-    - name: Retrieve Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ matrix.color }}
-
-    - name: Report Color
-      run: |
-        cat color
+      - name: Run Image on ${{ matrix.os }}
+        run: docker run ${{ matrix.images }}
